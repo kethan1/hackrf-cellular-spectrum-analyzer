@@ -1,0 +1,3 @@
+[submodule "libs/hackrf_sweeper"]
+	path = libs/hackrf_sweeper
+	url = https://github.com/subreption/hackrf_sweeper/
