@@ -1,3 +1,6 @@
 [submodule "libs/hackrf_sweeper"]
 	path = libs/hackrf_sweeper
 	url = https://github.com/subreption/hackrf_sweeper/
+[submodule "libs/QCustomPlot-library"]
+	path = libs/QCustomPlot-library
+	url = https://github.com/legerch/QCustomPlot-library

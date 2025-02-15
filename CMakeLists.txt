@@ -8,7 +8,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 set(CMAKE_CXX_EXTENSIONS off)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+set(QCUSTOMPLOT_VERSION 2.1.1 CACHE STRING "")
+set(QCUSTOMPLOT_URL "https://www.qcustomplot.com/release/${QCUSTOMPLOT_VERSION}/QCustomPlot-source.tar.gz" CACHE STRING "")
+
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Gui Widgets REQUIRED)
+
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui Widgets REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -19,19 +24,25 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 include(FindLibHackRF)
 include(FindLibUSB)
 
-message(STATUS "LIBHACKRF_INCLUDE_DIRS - ${LIBHACKRF_INCLUDE_DIR}")
-message(STATUS "LIBHACKRF_LIBRARIES - ${LIBHACKRF_LIBRARIES}")
+# Check for libraries
+if (NOT LIBHACKRF_INCLUDE_DIR OR NOT LIBHACKRF_LIBRARIES)
+    message(FATAL_ERROR "Could not find HackRF libraries. Please make sure FindLibHackRF.cmake is available.")
+endif()
 
+if (NOT LIBUSB_INCLUDE_DIR OR NOT LIBUSB_LIBRARIES)
+    message(FATAL_ERROR "Could not find libusb libraries. Please make sure FindLibUSB.cmake is available.")
+endif()
+
+message(STATUS "LIBHACKRF_INCLUDE_DIR - ${LIBHACKRF_INCLUDE_DIR}")
+message(STATUS "LIBHACKRF_LIBRARIES - ${LIBHACKRF_LIBRARIES}")
 message(STATUS "LIBUSB_INCLUDE_DIR - ${LIBUSB_INCLUDE_DIR}")
 message(STATUS "LIBUSB_LIBRARIES - ${LIBUSB_LIBRARIES}")
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${LIBHACKRF_INCLUDE_DIR})
-include_directories(${LIBUSB_INCLUDE_DIR})
+add_subdirectory(libs/hackrf_sweeper EXCLUDE_FROM_ALL)
 
-add_subdirectory(libs/hackrf_sweeper)
-include_directories(libs/hackrf_sweeper/include)
+add_subdirectory(libs/QCustomPlot-library)
 
-add_executable(cellular-spectrum-analyzer src/main.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp)
 
-target_link_libraries(cellular-spectrum-analyzer PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets ${LIBHACKRF_LIBRARIES} ${LIBUSB_LIBRARIES} hackrf_sweeper)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${LIBHACKRF_INCLUDE_DIR} ${LIBUSB_INCLUDE_DIR} libs/hackrf_sweeper/include)
+target_link_libraries(${PROJECT_NAME} PRIVATE hackrf_sweeper Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Widgets qcustomplot ${LIBHACKRF_LIBRARIES} ${LIBUSB_LIBRARIES})
