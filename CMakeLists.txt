@@ -8,9 +8,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 set(CMAKE_CXX_EXTENSIONS off)
 
-set(QCUSTOMPLOT_VERSION 2.1.1 CACHE STRING "")
-set(QCUSTOMPLOT_URL "https://www.qcustomplot.com/release/${QCUSTOMPLOT_VERSION}/QCustomPlot-source.tar.gz" CACHE STRING "")
-
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Gui Widgets REQUIRED)
 
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Gui Widgets REQUIRED)
@@ -33,16 +30,11 @@ if (NOT LIBUSB_INCLUDE_DIR OR NOT LIBUSB_LIBRARIES)
     message(FATAL_ERROR "Could not find libusb libraries. Please make sure FindLibUSB.cmake is available.")
 endif()
 
-message(STATUS "LIBHACKRF_INCLUDE_DIR - ${LIBHACKRF_INCLUDE_DIR}")
-message(STATUS "LIBHACKRF_LIBRARIES - ${LIBHACKRF_LIBRARIES}")
-message(STATUS "LIBUSB_INCLUDE_DIR - ${LIBUSB_INCLUDE_DIR}")
-message(STATUS "LIBUSB_LIBRARIES - ${LIBUSB_LIBRARIES}")
-
 add_subdirectory(libs/hackrf_sweeper EXCLUDE_FROM_ALL)
 
 add_subdirectory(libs/QCustomPlot-library)
 
-add_executable(${PROJECT_NAME} src/main.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/hackrf_controller.cpp include/hackrf_controller.hpp src/main_window.cpp include/main_window.hpp)
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${LIBHACKRF_INCLUDE_DIR} ${LIBUSB_INCLUDE_DIR} libs/hackrf_sweeper/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${LIBHACKRF_INCLUDE_DIR} ${LIBUSB_INCLUDE_DIR} libs/hackrf_sweeper/include include)
 target_link_libraries(${PROJECT_NAME} PRIVATE hackrf_sweeper Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Widgets qcustomplot ${LIBHACKRF_LIBRARIES} ${LIBUSB_LIBRARIES})
