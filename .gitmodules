@@ -4,3 +4,6 @@
 [submodule "libs/QCustomPlot-library"]
 	path = libs/QCustomPlot-library
 	url = https://github.com/legerch/QCustomPlot-library
+[submodule "libs/qwt"]
+	path = libs/qwt
+	url = https://git.code.sf.net/p/qwt/git

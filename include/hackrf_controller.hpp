@@ -10,6 +10,10 @@ extern "C" {
 #include <hackrf_sweeper.h>
 }
 
+const int FFT_BIN_WIDTH = 10'000;
+const uint16_t SWEEP_FREQ_MIN_MHZ = 2'400;
+const uint16_t SWEEP_FREQ_MAX_MHZ = 2'500;
+
 /**
  * Callback type to deliver FFT data to an observer.
  * x_data and y_data hold the FFT data.
@@ -48,7 +52,7 @@ class HackRF_Controller {
     void set_lna_gain(int gain);  // must be multiple of 8, 0 <= gain <= 40
     int get_total_gain();
     hackrf_gain_state get_gain_state();
-    void handle_fft(int size, float *window_ptr, float *pwr_ptr);
+    void handle_fft(uint64_t current_freq, int size, double fft_bin_width, float *pwr_ptr);
 
     void set_fft_callback(fft_callback callback);
 };
