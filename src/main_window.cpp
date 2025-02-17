@@ -4,10 +4,11 @@
 #include <QFormLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMetaObject>
 #include <QSlider>
 #include <QVBoxLayout>
+#include <QVector>
 #include <QWidget>
-#include <iostream>
 #include <ranges>
 
 #include "hackrf_controller.hpp"
@@ -58,47 +59,43 @@ MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(p
 
     main_layout->addLayout(control_layout);
 
-    custom_plot = new QCustomPlot();
-    custom_plot->addGraph();
-    custom_plot->xAxis->setLabel("Frequency (Hz)");
-    custom_plot->xAxis->setRange(SWEEP_FREQ_MIN_MHZ, SWEEP_FREQ_MAX_MHZ);
-    custom_plot->yAxis->setLabel("Power (dB)");
-    custom_plot->yAxis->setRange(-110, 20);
+    custom_plot = new QwtPlot();
+    custom_plot->setTitle("Frequency Sweep");
+    custom_plot->setAxisTitle(QwtPlot::xBottom, "Frequency (MHz)");
+    custom_plot->setAxisTitle(QwtPlot::yLeft, "Power (dB)");
+    custom_plot->setAxisScale(QwtPlot::xBottom, SWEEP_FREQ_MIN_MHZ, SWEEP_FREQ_MAX_MHZ);
+    custom_plot->setAxisScale(QwtPlot::yLeft, -110, 20);
 
-    QSharedPointer<QCPAxisTickerFixed> fixed_ticker_x(new QCPAxisTickerFixed);
-    custom_plot->xAxis->setTicker(fixed_ticker_x);
-    fixed_ticker_x->setTickStep((SWEEP_FREQ_MAX_MHZ - SWEEP_FREQ_MIN_MHZ) / 5);
-
-    QSharedPointer<QCPAxisTickerFixed> fixed_ticker_y(new QCPAxisTickerFixed);
-    custom_plot->yAxis->setTicker(fixed_ticker_y);
-    fixed_ticker_y->setTickStep(10);
-
-    color_plot = new QCustomPlot();
-    color_plot->axisRect()->setupFullAxesBox(true);
-
-    color_map = new QCPColorMap(color_plot->xAxis, color_plot->yAxis);
-
-    color_map->data()->setSize(color_map_width, color_map_samples);
-    color_map->data()->setRange(QCPRange(SWEEP_FREQ_MIN_MHZ, SWEEP_FREQ_MAX_MHZ), QCPRange(color_map_samples, 0));
-
-    // add a color scale:
-    QCPColorScale *colorScale = new QCPColorScale(color_plot);
-    color_plot->plotLayout()->addElement(0, 1, colorScale);
-    colorScale->setType(QCPAxis::atRight);
-    colorScale->setDataRange(QCPRange(-110, -25));
-    color_map->setColorScale(colorScale);
-    colorScale->axis()->setLabel("Magnetic Field Strength");
-
-    color_map->setGradient(QCPColorGradient::gpThermal);
-
-    QCPMarginGroup *marginGroup = new QCPMarginGroup(color_plot);
-    color_plot->axisRect()->setMarginGroup(QCP::msBottom | QCP::msTop, marginGroup);
-    colorScale->setMarginGroup(QCP::msBottom | QCP::msTop, marginGroup);
-
-    color_plot->rescaleAxes();
+    curve = new QwtPlotCurve();
+    curve->setTitle("Sweep Data");
+    curve->attach(custom_plot);
 
     main_layout->addWidget(custom_plot);
+
+    color_plot = new QwtPlot();
+    color_plot->setTitle("Spectrogram");
+    color_plot->setAxisTitle(QwtPlot::xBottom, "Frequency (MHz)");
+    color_plot->setAxisTitle(QwtPlot::yLeft, "Time");
+    color_plot->setAxisScale(QwtPlot::xBottom, SWEEP_FREQ_MIN_MHZ, SWEEP_FREQ_MAX_MHZ);
+    color_plot->setAxisScale(QwtPlot::yLeft, 0, color_map_samples);
+
+    color_map = new QwtPlotSpectrogram();
+    raster_data = new QwtMatrixRasterData();
+    raster_data->setInterval(Qt::XAxis, QwtInterval(0, color_map_width));
+    raster_data->setInterval(Qt::YAxis, QwtInterval(0, color_map_samples));
+    raster_data->setInterval(Qt::ZAxis, QwtInterval(-110, 25));
+
+    QVector<double> matrix_data(color_map_width * color_map_samples, -110);
+    raster_data->setValueMatrix(matrix_data, color_map_width);
+    color_map->setData(raster_data);
+
+    QwtLinearColorMap *linear_color_map = new QwtLinearColorMap(Qt::blue, Qt::red);
+    color_map->setColorMap(linear_color_map);
+
+    color_map->attach(color_plot);
+
     main_layout->addWidget(color_plot);
+
     setCentralWidget(central_widget);
 
     controller->set_fft_callback([this](const std::vector<double> &x_data, const std::vector<double> &y_data) {
@@ -107,33 +104,35 @@ MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(p
 }
 
 void MainWindow::update_plot(const std::vector<double> &x_data, const std::vector<double> &y_data) {
-    for (int i = 0; i < x_data.size(); ++i) {
+    for (size_t i = 0; i < x_data.size(); ++i) {
         current_data[x_data[i]] = y_data[i];
     }
 
-    custom_plot->graph(0)->setData(QVector<double>(std::views::keys(current_data).begin(), std::views::keys(current_data).end()),
-                                   QVector<double>(std::views::values(current_data).begin(), std::views::values(current_data).end()));
-    custom_plot->replot(QCustomPlot::rpQueuedReplot);
+    curve->setSamples(QVector<double>(std::views::keys(current_data).begin(), std::views::keys(current_data).end()),
+                      QVector<double>(std::views::values(current_data).begin(), std::views::values(current_data).end()));
+    custom_plot->replot();
+
+    QVector<double> matrix_data = raster_data->valueMatrix();
 
     if (current_data.size() != color_map_width) {
-        color_map->data()->setSize(current_data.size(), color_map_samples);
-        color_plot->rescaleAxes();
         color_map_width = current_data.size();
+        matrix_data = QVector<double>(color_map_width * color_map_samples, -110);
+        raster_data->setInterval(Qt::XAxis, QwtInterval(0, color_map_width));
     }
 
-    for (int i = color_map_samples - 1; i > 0; --i) {
-        for (size_t j = 0; j < color_map_width; ++j) {
-            color_map->data()->setCell(j, i, color_map->data()->cell(j, i - 1));
+    for (int row = color_map_samples - 1; row > 0; --row) {
+        for (size_t col = 0; col < color_map_width; ++col) {
+            matrix_data[row * color_map_width + col] = matrix_data[(row - 1) * color_map_width + col];
         }
     }
 
-    int i=0;
-    for (const auto &[key, value] : current_data) {
-        color_map->data()->setCell(i, 0, value);
-        ++i;
+    int col = 0;
+    for (const auto &pair : current_data) {
+        matrix_data[col] = pair.second;
+        ++col;
     }
-
-    color_plot->replot(QCustomPlot::rpQueuedReplot);
+    raster_data->setValueMatrix(matrix_data, color_map_width);
+    color_plot->replot();
 }
 
 void MainWindow::update_total_gain() {

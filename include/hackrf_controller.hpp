@@ -1,16 +1,16 @@
-#ifndef HackRF_Controller_H
-#define HackRF_Controller_H
+#ifndef HackRF_Controller_HPP
+#define HackRF_Controller_HPP
 
 #include <libhackrf/hackrf.h>
-
-#include <functional>
-#include <mutex>
-#include <vector>
 extern "C" {
 #include <hackrf_sweeper.h>
 }
 
-const int FFT_BIN_WIDTH = 10'000;
+#include <functional>
+#include <mutex>
+#include <vector>
+
+const int FFT_BIN_WIDTH = 20'000;
 const uint16_t SWEEP_FREQ_MIN_MHZ = 2'400;
 const uint16_t SWEEP_FREQ_MAX_MHZ = 2'500;
 
@@ -57,4 +57,4 @@ class HackRF_Controller {
     void set_fft_callback(fft_callback callback);
 };
 
-#endif  // HackRF_Controller_H
+#endif  // HackRF_Controller_HPP

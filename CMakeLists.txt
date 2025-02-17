@@ -31,7 +31,6 @@ if (NOT LIBUSB_INCLUDE_DIR OR NOT LIBUSB_LIBRARIES)
 endif()
 
 add_subdirectory(libs/hackrf_sweeper EXCLUDE_FROM_ALL)
-add_subdirectory(libs/QCustomPlot-library)
 
 set(qwt_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs/qwt)
 
@@ -47,4 +46,4 @@ target_link_libraries(qwt PUBLIC Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJO
 add_executable(${PROJECT_NAME} src/main.cpp src/hackrf_controller.cpp include/hackrf_controller.hpp src/main_window.cpp include/main_window.hpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${LIBHACKRF_INCLUDE_DIR} ${LIBUSB_INCLUDE_DIR} libs/hackrf_sweeper/include include)
-target_link_libraries(${PROJECT_NAME} PRIVATE hackrf_sweeper Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Widgets qcustomplot qwt ${LIBHACKRF_LIBRARIES} ${LIBUSB_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE hackrf_sweeper Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Widgets qwt ${LIBHACKRF_LIBRARIES} ${LIBUSB_LIBRARIES})

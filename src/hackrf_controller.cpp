@@ -57,7 +57,7 @@ bool HackRF_Controller::connect_device() {
     }
     connected = true;
 
-    result = hackrf_set_sample_rate_manual(device, 1e6, 1);
+    result = hackrf_set_sample_rate_manual(device, 5e6, 1);
     if (result != HACKRF_SUCCESS) {
         std::cerr << "Failed to set sample rate\n";
     }
