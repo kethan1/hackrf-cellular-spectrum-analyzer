@@ -9,8 +9,11 @@
 #include <QVBoxLayout>
 #include <QVector>
 #include <QWidget>
+#include <algorithm>
+#include <iostream>
 #include <ranges>
 
+#include "dataset_spectrum.hpp"
 #include "hackrf_controller.hpp"
 
 MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(parent), controller(ctrl) {
@@ -63,7 +66,7 @@ MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(p
     custom_plot->setTitle("Frequency Sweep");
     custom_plot->setAxisTitle(QwtPlot::xBottom, "Frequency (MHz)");
     custom_plot->setAxisTitle(QwtPlot::yLeft, "Power (dB)");
-    custom_plot->setAxisScale(QwtPlot::xBottom, SWEEP_FREQ_MIN_MHZ, SWEEP_FREQ_MAX_MHZ);
+    custom_plot->setAxisScale(QwtPlot::xBottom, SWEEP_FREQ_MIN_MHZ * 1e6, SWEEP_FREQ_MAX_MHZ * 1e6);
     custom_plot->setAxisScale(QwtPlot::yLeft, -110, 20);
 
     curve = new QwtPlotCurve();
@@ -76,7 +79,7 @@ MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(p
     color_plot->setTitle("Spectrogram");
     color_plot->setAxisTitle(QwtPlot::xBottom, "Frequency (MHz)");
     color_plot->setAxisTitle(QwtPlot::yLeft, "Time");
-    color_plot->setAxisScale(QwtPlot::xBottom, SWEEP_FREQ_MIN_MHZ, SWEEP_FREQ_MAX_MHZ);
+    color_plot->setAxisScale(QwtPlot::xBottom, SWEEP_FREQ_MIN_MHZ * 1e6, SWEEP_FREQ_MAX_MHZ * 1e6);
     color_plot->setAxisScale(QwtPlot::yLeft, 0, color_map_samples);
 
     color_map = new QwtPlotSpectrogram();
@@ -85,12 +88,18 @@ MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(p
     raster_data->setInterval(Qt::YAxis, QwtInterval(0, color_map_samples));
     raster_data->setInterval(Qt::ZAxis, QwtInterval(-110, 25));
 
+    QwtLinearColorMap *linear_color_map = new QwtLinearColorMap();
+    linear_color_map->addColorStop(0.0, QColor(0, 0, 50));
+    linear_color_map->addColorStop(0.15, QColor(20, 0, 120));
+    linear_color_map->addColorStop(0.33, QColor(200, 30, 140));
+    linear_color_map->addColorStop(0.6, QColor(255, 100, 0));
+    linear_color_map->addColorStop(0.85, QColor(255, 255, 40));
+    linear_color_map->addColorStop(1.0, QColor(255, 255, 255));
+    color_map->setColorMap(linear_color_map);
+
     QVector<double> matrix_data(color_map_width * color_map_samples, -110);
     raster_data->setValueMatrix(matrix_data, color_map_width);
     color_map->setData(raster_data);
-
-    QwtLinearColorMap *linear_color_map = new QwtLinearColorMap(Qt::blue, Qt::red);
-    color_map->setColorMap(linear_color_map);
 
     color_map->attach(color_plot);
 
@@ -98,27 +107,39 @@ MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(p
 
     setCentralWidget(central_widget);
 
-    controller->set_fft_callback([this](const std::vector<double> &x_data, const std::vector<double> &y_data) {
-        QMetaObject::invokeMethod(this, [=]() { update_plot(x_data, y_data); }, Qt::QueuedConnection);
+    controller->set_fft_callback([this](const hackrf_sweep_state_t *state, uint64_t current_freq) {
+        QMetaObject::invokeMethod(this, [=]() { update_plot(state, current_freq); }, Qt::QueuedConnection);
     });
 }
 
-void MainWindow::update_plot(const std::vector<double> &x_data, const std::vector<double> &y_data) {
-    for (size_t i = 0; i < x_data.size(); ++i) {
-        current_data[x_data[i]] = y_data[i];
+void MainWindow::update_plot(const hackrf_sweep_state_t *state, uint64_t current_freq) {
+    int size = state->fft.size;
+    int fft_bin_width = state->fft.bin_width;
+    float *pwr_ptr = state->fft.pwr;
+
+    if (!dataset_spectrum.is_initialized()) {
+        dataset_spectrum = DatasetSpectrum(fft_bin_width, SWEEP_FREQ_MIN_MHZ, SWEEP_FREQ_MAX_MHZ, -120);
     }
 
-    curve->setSamples(QVector<double>(std::views::keys(current_data).begin(), std::views::keys(current_data).end()),
-                      QVector<double>(std::views::values(current_data).begin(), std::views::values(current_data).end()));
-    custom_plot->replot();
+    std::vector<double> x_data(size), y_data(size);
+
+    for (int i = 0; i < size; ++i) {
+        x_data[i] = current_freq + i * fft_bin_width;
+        y_data[i] = pwr_ptr[i];
+    }
+
+    if (dataset_spectrum.add_new_data(x_data, y_data)) {
+        const auto freq_arr = dataset_spectrum.get_frequency_array();
+        const auto &pwr_arr = dataset_spectrum.get_spectrum_array();
+
+        curve->setSamples(
+            QVector(freq_arr.begin(), freq_arr.end()),
+            QVector(pwr_arr.begin(), pwr_arr.end())
+        );
+        custom_plot->replot();
+    }
 
     QVector<double> matrix_data = raster_data->valueMatrix();
-
-    if (current_data.size() != color_map_width) {
-        color_map_width = current_data.size();
-        matrix_data = QVector<double>(color_map_width * color_map_samples, -110);
-        raster_data->setInterval(Qt::XAxis, QwtInterval(0, color_map_width));
-    }
 
     for (int row = color_map_samples - 1; row > 0; --row) {
         for (size_t col = 0; col < color_map_width; ++col) {
@@ -127,8 +148,8 @@ void MainWindow::update_plot(const std::vector<double> &x_data, const std::vecto
     }
 
     int col = 0;
-    for (const auto &pair : current_data) {
-        matrix_data[col] = pair.second;
+    for (double value : dataset_spectrum.get_spectrum_array()) {
+        matrix_data[col] = value;
         ++col;
     }
     raster_data->setValueMatrix(matrix_data, color_map_width);

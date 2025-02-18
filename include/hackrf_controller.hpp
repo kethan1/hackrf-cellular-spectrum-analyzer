@@ -18,7 +18,7 @@ const uint16_t SWEEP_FREQ_MAX_MHZ = 2'500;
  * Callback type to deliver FFT data to an observer.
  * x_data and y_data hold the FFT data.
  */
-using fft_callback = std::function<void(const std::vector<double> &x_data, const std::vector<double> &y_data)>;
+using fft_callback = std::function<void(const hackrf_sweep_state_t *state, uint64_t current_freq)>;
 
 struct hackrf_gain_state {
     bool amp_enable;
@@ -52,7 +52,7 @@ class HackRF_Controller {
     void set_lna_gain(int gain);  // must be multiple of 8, 0 <= gain <= 40
     int get_total_gain();
     hackrf_gain_state get_gain_state();
-    void handle_fft(uint64_t current_freq, int size, double fft_bin_width, float *pwr_ptr);
+    void handle_fft(hackrf_sweep_state_t *state, uint64_t current_freq);
 
     void set_fft_callback(fft_callback callback);
 };

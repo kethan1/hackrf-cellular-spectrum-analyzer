@@ -10,9 +10,9 @@ static HackRF_Controller *global_controller = nullptr;
 extern "C" {
     int hackrf_sweep_fft_callback(void *sweep_state, uint64_t current_freq, hackrf_transfer * /*transfer*/) {
         if (global_controller) {
-            hackrf_sweep_state *state = static_cast<hackrf_sweep_state *>(sweep_state);
+            hackrf_sweep_state_t *state = static_cast<hackrf_sweep_state_t *>(sweep_state);
 
-            global_controller->handle_fft(current_freq, state->fft.size, state->fft.bin_width, state->fft.pwr);
+            global_controller->handle_fft(state, current_freq);
         }
         return 0;
     }
@@ -57,7 +57,7 @@ bool HackRF_Controller::connect_device() {
     }
     connected = true;
 
-    result = hackrf_set_sample_rate_manual(device, 5e6, 1);
+    result = hackrf_set_sample_rate_manual(device, DEFAULT_SAMPLE_RATE_HZ, 1);
     if (result != HACKRF_SUCCESS) {
         std::cerr << "Failed to set sample rate\n";
     }
@@ -179,15 +179,8 @@ void HackRF_Controller::set_fft_callback(fft_callback callback) {
     fft_callback_ = callback;
 }
 
-void HackRF_Controller::handle_fft(uint64_t current_freq, int size, double fft_bin_width, float *pwr_ptr) {
-    std::vector<double> x_data(size), y_data(size);
-
-    for (int i = 0; i < size; ++i) {
-        x_data[i] = current_freq / 1e6 + (i * fft_bin_width / 1e6);
-        y_data[i] = pwr_ptr[i];
-    }
+void HackRF_Controller::handle_fft(hackrf_sweep_state_t *state, uint64_t current_freq) {
     if (fft_callback_) {
-        fft_callback_(x_data, y_data);
+        fft_callback_(state, current_freq);
     }
 }
-
