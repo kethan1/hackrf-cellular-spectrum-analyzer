@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <vector>
+#include <iostream>
 
 DatasetSpectrum::DatasetSpectrum() : initialized(false) {}
 
@@ -10,10 +11,14 @@ DatasetSpectrum::DatasetSpectrum(double fft_bin_size_hz, int freq_start_mhz, int
       freq_start_mhz(freq_start_mhz),
       freq_stop_mhz(freq_stop_mhz),
       spectrum_init_power(spectrum_init_power),
-      initialized(true) {
-    freq_start_hz = freq_start_mhz * 1000000l;
-    int datapoints = std::ceil(freq_stop_mhz - freq_start_mhz) * 1000000 / fft_bin_size_hz;
+      initialized(true),
+      freq_start_hz(freq_start_mhz * 1e6l) {
+    int datapoints = std::ceil(freq_stop_mhz - freq_start_mhz) * 1e6 / fft_bin_size_hz;
     spectrum.resize(datapoints, spectrum_init_power);
+}
+
+int DatasetSpectrum::get_num_datapoints() {
+    return std::ceil(freq_stop_mhz - freq_start_mhz) * 1e6 / fft_bin_size_hz;
 }
 
 bool DatasetSpectrum::add_new_data(const std::vector<double> &freq_start, const std::vector<double> &sig_pow_dbm) {
@@ -33,7 +38,6 @@ const std::vector<double> &DatasetSpectrum::get_spectrum_array() const {
 }
 
 const std::vector<double> DatasetSpectrum::get_frequency_array() const {
-    // calculate an return freq array
     std::vector<double> freq_arr;
 
     for (size_t i = 0; i < spectrum.size(); ++i) {

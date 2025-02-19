@@ -13,6 +13,7 @@
 
 #include "hackrf_controller.hpp"
 #include "dataset_spectrum.hpp"
+#include "waterfall_raster_data.hpp"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -26,16 +27,11 @@ class MainWindow : public QMainWindow {
 
     QwtPlot *color_plot;
     QwtPlotSpectrogram *color_map;
-    QwtMatrixRasterData *raster_data;
+    WaterfallRasterData *raster_data;
 
-    // QVector<double> freq_data;
-    // QVector<double> pwr_data;
-    // std::vector<double> positions;
-    // std::vector<double> position_starts;
     DatasetSpectrum dataset_spectrum;
 
-    int color_map_samples = 100;
-    size_t color_map_width = 200;
+    int color_map_samples = 300;
 
     HackRF_Controller *controller;
     QLineEdit *total_gain_field;

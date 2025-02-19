@@ -5,6 +5,8 @@
 #include <thread>
 #include <iostream>
 #include <thread>
+#include <chrono>
+#include <thread>
 
 #include "hackrf_controller.hpp"
 #include "main_window.hpp"
@@ -16,6 +18,9 @@ const int HACKRF_VENDOR_ID = 0x1d50;
 int hotplug_callback(struct libusb_context * /*ctx*/, struct libusb_device * /*dev*/,
                      libusb_hotplug_event /*event*/, void *user_data) {
     HackRF_Controller *controller = static_cast<HackRF_Controller *>(user_data);
+
+    std::this_thread::sleep_for(2s);
+
     controller->connect_device();
     return 0;
 }

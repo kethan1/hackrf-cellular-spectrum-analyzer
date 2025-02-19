@@ -15,6 +15,19 @@
 
 #include "dataset_spectrum.hpp"
 #include "hackrf_controller.hpp"
+#include "waterfall_raster_data.hpp"
+
+class ThermalColorMap : public QwtLinearColorMap {
+   public:
+    ThermalColorMap() {
+        addColorStop(0.0, QColor(0, 0, 50));
+        addColorStop(0.15, QColor(20, 0, 120));
+        addColorStop(0.33, QColor(200, 30, 140));
+        addColorStop(0.6, QColor(255, 100, 0));
+        addColorStop(0.85, QColor(255, 255, 40));
+        addColorStop(1, QColor(255, 255, 255));
+    }
+};
 
 MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(parent), controller(ctrl) {
     QWidget *central_widget = new QWidget(this);
@@ -76,31 +89,9 @@ MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(p
     main_layout->addWidget(custom_plot);
 
     color_plot = new QwtPlot();
-    color_plot->setTitle("Spectrogram");
-    color_plot->setAxisTitle(QwtPlot::xBottom, "Frequency (MHz)");
-    color_plot->setAxisTitle(QwtPlot::yLeft, "Time");
-    color_plot->setAxisScale(QwtPlot::xBottom, SWEEP_FREQ_MIN_MHZ * 1e6, SWEEP_FREQ_MAX_MHZ * 1e6);
-    color_plot->setAxisScale(QwtPlot::yLeft, 0, color_map_samples);
 
     color_map = new QwtPlotSpectrogram();
-    raster_data = new QwtMatrixRasterData();
-    raster_data->setInterval(Qt::XAxis, QwtInterval(0, color_map_width));
-    raster_data->setInterval(Qt::YAxis, QwtInterval(0, color_map_samples));
-    raster_data->setInterval(Qt::ZAxis, QwtInterval(-110, 25));
-
-    QwtLinearColorMap *linear_color_map = new QwtLinearColorMap();
-    linear_color_map->addColorStop(0.0, QColor(0, 0, 50));
-    linear_color_map->addColorStop(0.15, QColor(20, 0, 120));
-    linear_color_map->addColorStop(0.33, QColor(200, 30, 140));
-    linear_color_map->addColorStop(0.6, QColor(255, 100, 0));
-    linear_color_map->addColorStop(0.85, QColor(255, 255, 40));
-    linear_color_map->addColorStop(1.0, QColor(255, 255, 255));
-    color_map->setColorMap(linear_color_map);
-
-    QVector<double> matrix_data(color_map_width * color_map_samples, -110);
-    raster_data->setValueMatrix(matrix_data, color_map_width);
-    color_map->setData(raster_data);
-
+    color_map->setColorMap(new ThermalColorMap());
     color_map->attach(color_plot);
 
     main_layout->addWidget(color_plot);
@@ -118,7 +109,12 @@ void MainWindow::update_plot(const hackrf_sweep_state_t *state, uint64_t current
     float *pwr_ptr = state->fft.pwr;
 
     if (!dataset_spectrum.is_initialized()) {
-        dataset_spectrum = DatasetSpectrum(fft_bin_width, SWEEP_FREQ_MIN_MHZ, SWEEP_FREQ_MAX_MHZ, -120);
+        dataset_spectrum = DatasetSpectrum(fft_bin_width, state->frequencies[0], state->frequencies[1], -110);
+
+        raster_data = new WaterfallRasterData(color_map_samples, dataset_spectrum.get_num_datapoints(), -110);
+        raster_data->setInterval(Qt::ZAxis, QwtInterval(-110, 25));
+
+        color_map->setData(raster_data);
     }
 
     std::vector<double> x_data(size), y_data(size);
@@ -134,25 +130,15 @@ void MainWindow::update_plot(const hackrf_sweep_state_t *state, uint64_t current
 
         curve->setSamples(
             QVector(freq_arr.begin(), freq_arr.end()),
-            QVector(pwr_arr.begin(), pwr_arr.end())
-        );
+            QVector(pwr_arr.begin(), pwr_arr.end()));
         custom_plot->replot();
     }
 
-    QVector<double> matrix_data = raster_data->valueMatrix();
+    const std::vector<double> freq_vec = dataset_spectrum.get_spectrum_array();
+    QVector<double>* freq_qvec = new QVector<double>(freq_vec.begin(), freq_vec.end());
 
-    for (int row = color_map_samples - 1; row > 0; --row) {
-        for (size_t col = 0; col < color_map_width; ++col) {
-            matrix_data[row * color_map_width + col] = matrix_data[(row - 1) * color_map_width + col];
-        }
-    }
+    raster_data->addRow(freq_qvec);
 
-    int col = 0;
-    for (double value : dataset_spectrum.get_spectrum_array()) {
-        matrix_data[col] = value;
-        ++col;
-    }
-    raster_data->setValueMatrix(matrix_data, color_map_width);
     color_plot->replot();
 }
 
