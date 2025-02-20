@@ -99,7 +99,7 @@ MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(p
     setCentralWidget(central_widget);
 
     controller->set_fft_callback([this](const hackrf_sweep_state_t *state, uint64_t current_freq) {
-        QMetaObject::invokeMethod(this, [=]() { update_plot(state, current_freq); }, Qt::QueuedConnection);
+        QMetaObject::invokeMethod(this, [this, state, current_freq]() { update_plot(state, current_freq); }, Qt::QueuedConnection);
     });
 }
 
@@ -117,14 +117,7 @@ void MainWindow::update_plot(const hackrf_sweep_state_t *state, uint64_t current
         color_map->setData(raster_data);
     }
 
-    std::vector<double> x_data(size), y_data(size);
-
-    for (int i = 0; i < size; ++i) {
-        x_data[i] = current_freq + i * fft_bin_width;
-        y_data[i] = pwr_ptr[i];
-    }
-
-    if (dataset_spectrum.add_new_data(x_data, y_data)) {
+    if (dataset_spectrum.add_new_data(current_freq, std::vector<double>(pwr_ptr, pwr_ptr + size))) {
         const auto freq_arr = dataset_spectrum.get_frequency_array();
         const auto &pwr_arr = dataset_spectrum.get_spectrum_array();
 
@@ -135,7 +128,7 @@ void MainWindow::update_plot(const hackrf_sweep_state_t *state, uint64_t current
     }
 
     const std::vector<double> freq_vec = dataset_spectrum.get_spectrum_array();
-    QVector<double>* freq_qvec = new QVector<double>(freq_vec.begin(), freq_vec.end());
+    QVector<double> *freq_qvec = new QVector<double>(freq_vec.begin(), freq_vec.end());
 
     raster_data->addRow(freq_qvec);
 

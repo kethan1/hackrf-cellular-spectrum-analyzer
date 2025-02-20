@@ -33,6 +33,15 @@ bool DatasetSpectrum::add_new_data(const std::vector<double> &freq_start, const 
     return freq_start[0] == freq_start_hz;
 }
 
+bool DatasetSpectrum::add_new_data(double freq_start, const std::vector<double> &sig_pow_dbm) {
+    int spectr_index = (freq_start - freq_start_hz) / fft_bin_size_hz;
+    for (size_t bins_index = 0; bins_index < sig_pow_dbm.size(); ++bins_index) {
+        spectrum[spectr_index + bins_index] = sig_pow_dbm[bins_index];
+    }
+
+    return freq_start == freq_start_hz;
+}
+
 const std::vector<double> &DatasetSpectrum::get_spectrum_array() const {
     return spectrum;
 }
