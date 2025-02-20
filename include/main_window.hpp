@@ -15,6 +15,8 @@
 #include "dataset_spectrum.hpp"
 #include "waterfall_raster_data.hpp"
 
+const int COLOR_MAP_SAMPLES = 1000;
+
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
@@ -30,8 +32,6 @@ class MainWindow : public QMainWindow {
     WaterfallRasterData *raster_data;
 
     DatasetSpectrum dataset_spectrum;
-
-    int color_map_samples = 300;
 
     HackRF_Controller *controller;
     QLineEdit *total_gain_field;

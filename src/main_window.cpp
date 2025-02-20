@@ -109,30 +109,30 @@ void MainWindow::update_plot(const hackrf_sweep_state_t *state, uint64_t current
     float *pwr_ptr = state->fft.pwr;
 
     if (!dataset_spectrum.is_initialized()) {
-        dataset_spectrum = DatasetSpectrum(fft_bin_width, state->frequencies[0], state->frequencies[1], -110);
+        dataset_spectrum = DatasetSpectrum(fft_bin_width, state->frequencies[0], state->frequencies[1], -90);
 
-        raster_data = new WaterfallRasterData(color_map_samples, dataset_spectrum.get_num_datapoints(), -110);
-        raster_data->setInterval(Qt::ZAxis, QwtInterval(-110, 25));
+        raster_data = new WaterfallRasterData(COLOR_MAP_SAMPLES, dataset_spectrum.get_num_datapoints(), -90);
+
+        raster_data->setInterval(Qt::ZAxis, QwtInterval(-90, -25));
+        color_plot->setAxisScale(QwtPlot::xBottom, 0, dataset_spectrum.get_num_datapoints());
 
         color_map->setData(raster_data);
     }
 
-    if (dataset_spectrum.add_new_data(current_freq, std::vector<double>(pwr_ptr, pwr_ptr + size))) {
-        const auto freq_arr = dataset_spectrum.get_frequency_array();
-        const auto &pwr_arr = dataset_spectrum.get_spectrum_array();
+    if (dataset_spectrum.add_new_data(current_freq, pwr_ptr, size)) {
+        const std::vector<double> freq_vec = dataset_spectrum.get_frequency_array();
+        const auto &pwr_vec = dataset_spectrum.get_spectrum_array();
 
         curve->setSamples(
-            QVector(freq_arr.begin(), freq_arr.end()),
-            QVector(pwr_arr.begin(), pwr_arr.end()));
+            QVector(freq_vec.begin(), freq_vec.end()),
+            QVector(pwr_vec.begin(), pwr_vec.end()));
         custom_plot->replot();
+
+        QVector<double> *freq_qvec = new QVector<double>(pwr_vec.begin(), pwr_vec.end());
+
+        raster_data->addRow(freq_qvec);
+        color_plot->replot();
     }
-
-    const std::vector<double> freq_vec = dataset_spectrum.get_spectrum_array();
-    QVector<double> *freq_qvec = new QVector<double>(freq_vec.begin(), freq_vec.end());
-
-    raster_data->addRow(freq_qvec);
-
-    color_plot->replot();
 }
 
 void MainWindow::update_total_gain() {

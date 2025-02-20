@@ -20,6 +20,7 @@ class DatasetSpectrum {
     int get_num_datapoints();
     bool add_new_data(const std::vector<double> &freq_start, const std::vector<double> &sig_pow_dbm);
     bool add_new_data(double freq_start, const std::vector<double> &sig_pow_dbm);
+    bool add_new_data(double freq_start, float *sig_pow_dbm, int size);
     const std::vector<double> &get_spectrum_array() const;
     const std::vector<double> get_frequency_array() const;
     void clear();
