@@ -1,15 +1,12 @@
 #include "waterfall_raster_data.hpp"
 
 #include <QtGlobal>
-#include <iostream>
 #include <vector>
 
 WaterfallRasterData::WaterfallRasterData(int rows, int cols, double init_value)
-    : m_maxRows(rows), m_cols(cols), m_currentIndex(0) {
-    m_rows.resize(m_maxRows);
-    for (int i = 0; i < m_maxRows; ++i) {
-        m_rows[i].resize(m_cols, init_value);
-    }
+    : m_maxRows(rows), m_cols(cols), m_currentIndex(0)
+{
+    m_data.resize(m_maxRows * m_cols, init_value);
 
     setInterval(Qt::XAxis, QwtInterval(0, m_cols));
     setInterval(Qt::YAxis, QwtInterval(0, m_maxRows));
@@ -17,7 +14,7 @@ WaterfallRasterData::WaterfallRasterData(int rows, int cols, double init_value)
 }
 
 WaterfallRasterData::~WaterfallRasterData() {
-    m_rows.clear();
+    m_data.clear();
 }
 
 void WaterfallRasterData::addRow(QVector<double> newRow) {
@@ -25,7 +22,10 @@ void WaterfallRasterData::addRow(QVector<double> newRow) {
         return;
     }
 
-    m_rows[m_currentIndex].assign(newRow.begin(), newRow.end());
+    int start_index = m_currentIndex * m_cols;
+    for (int i = 0; i < m_cols; ++i) {
+        m_data[start_index + i] = newRow.at(i);
+    }
 
     m_currentIndex = (m_currentIndex + 1) % m_maxRows;
 }
@@ -41,5 +41,5 @@ double WaterfallRasterData::value(double x, double y) const {
 
     int actualRow = (m_currentIndex + row) % m_maxRows;
 
-    return m_rows[actualRow].at(col);
+    return m_data[actualRow * m_cols + col];
 }

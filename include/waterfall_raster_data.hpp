@@ -10,7 +10,6 @@ class WaterfallRasterData : public QwtMatrixRasterData
 {
 public:
     WaterfallRasterData(int rows, int cols, double init_value);
-
     virtual ~WaterfallRasterData();
 
     void addRow(QVector<double> newRow);
@@ -18,7 +17,7 @@ public:
     virtual double value(double x, double y) const override;
 
 private:
-    std::vector<std::vector<double>> m_rows;
+    std::vector<double> m_data;
     int m_maxRows;
     int m_cols;
     int m_currentIndex;

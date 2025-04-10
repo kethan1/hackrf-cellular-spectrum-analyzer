@@ -30,7 +30,7 @@ if (NOT LIBUSB_INCLUDE_DIR OR NOT LIBUSB_LIBRARIES)
     message(FATAL_ERROR "Could not find libusb libraries. Please make sure FindLibUSB.cmake is available.")
 endif()
 
-add_subdirectory(libs/hackrf_sweeper)
+add_subdirectory(libs/hackrf_sweeper EXCLUDE_FROM_ALL)
 
 set(qwt_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs/qwt)
 

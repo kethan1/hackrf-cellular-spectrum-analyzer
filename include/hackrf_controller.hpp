@@ -11,7 +11,7 @@ extern "C" {
 #include <hackrf_sweeper.h>
 }
 
-const int FFT_BIN_WIDTH = 100'000;
+const int FFT_BIN_WIDTH = 50'000;
 const uint16_t SWEEP_FREQ_MIN_MHZ = 2'200;
 const uint16_t SWEEP_FREQ_MAX_MHZ = 2'600;
 

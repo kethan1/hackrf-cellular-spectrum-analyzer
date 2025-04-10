@@ -40,7 +40,7 @@ DatasetSpectrum::DatasetSpectrum(double fft_bin_size_hz, int freq_start_mhz, int
 }
 
 int DatasetSpectrum::get_num_datapoints() const {
-    return (freq_stop_mhz - freq_start_mhz) * 1e6l / fft_bin_size_hz;
+    return std::ceil((freq_stop_mhz - freq_start_mhz) / (fft_bin_size_hz / 1e6));
 }
 
 void DatasetSpectrum::add_new_data(uint64_t start_freq, uint64_t end_freq, std::vector<float> pwr) {
@@ -68,12 +68,11 @@ const QVector<double> DatasetSpectrum::get_frequency_array() const {
 
     freq_vec.reserve(spectrum.size());
 
-    std::cout << spectrum.size() << ' ' << get_num_datapoints() << '\n';
     for (const auto& pair : spectrum) {
         freq_vec.push_back(pair.first / 1e6);
-        // std::cout << pair.first << '\n';
     }
-    std::cout << freq_vec[0] << ' ' << freq_vec[freq_vec.size() - 1] << '\n';
+
+    std::cout << spectrum.size() << ' ' << get_num_datapoints() << '\n';
 
     return freq_vec;
 }
