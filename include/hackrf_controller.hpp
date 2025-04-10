@@ -12,8 +12,8 @@ extern "C" {
 }
 
 const int FFT_BIN_WIDTH = 100'000;
-const uint16_t SWEEP_FREQ_MIN_MHZ = 300;
-const uint16_t SWEEP_FREQ_MAX_MHZ = 500;
+const uint16_t SWEEP_FREQ_MIN_MHZ = 2'200;
+const uint16_t SWEEP_FREQ_MAX_MHZ = 2'600;
 
 struct hackrf_gain_state {
     bool amp_enable;

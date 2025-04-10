@@ -9,22 +9,22 @@
 #include <QMainWindow>
 #include <QLineEdit>
 
-std::vector<int> int_linspace(double start, double stop, int num, bool endpoint = true) {
+std::vector<uint64_t> uint64_linspace(double start, double stop, int num, bool endpoint = true) {
     // Return an empty vector if num is non-positive.
     if (num <= 0) {
-        return std::vector<int>{};
+        return std::vector<uint64_t>{};
     }
 
     // Special case for a single element.
     if (num == 1) {
-        return std::vector<int>{static_cast<int>(start)};
+        return std::vector<uint64_t>{static_cast<uint64_t>(start)};
     }
 
-    std::vector<int> result(num);
+    std::vector<uint64_t> result(num);
     double step_size = endpoint ? (stop - start) / (num - 1) : (stop - start) / num;
 
     for (int i = 0; i < num; ++i) {
-        result[i] = static_cast<int>(start + i * step_size);
+        result[i] = static_cast<uint64_t>(start + i * step_size);
     }
 
     return result;
@@ -44,7 +44,7 @@ int DatasetSpectrum::get_num_datapoints() const {
 }
 
 void DatasetSpectrum::add_new_data(uint64_t start_freq, uint64_t end_freq, std::vector<float> pwr) {
-    std::vector<int> freqs = int_linspace(start_freq, end_freq, pwr.size(), false);
+    std::vector<uint64_t> freqs = uint64_linspace(start_freq, end_freq, pwr.size(), false);
 
     for (size_t i = 0; i < pwr.size(); ++i) {
         spectrum[freqs[i]] = pwr[i];
