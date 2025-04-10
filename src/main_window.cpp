@@ -16,18 +16,7 @@
 #include "dataset_spectrum.hpp"
 #include "hackrf_controller.hpp"
 #include "waterfall_raster_data.hpp"
-
-class ThermalColorMap : public QwtLinearColorMap {
-   public:
-    ThermalColorMap() {
-        addColorStop(0.0, QColor(0, 0, 50));
-        addColorStop(0.15, QColor(20, 0, 120));
-        addColorStop(0.33, QColor(200, 30, 140));
-        addColorStop(0.6, QColor(255, 100, 0));
-        addColorStop(0.85, QColor(255, 255, 40));
-        addColorStop(1, QColor(255, 255, 255));
-    }
-};
+#include <thermal_color_map.hpp>
 
 MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(parent), controller(ctrl) {
     QWidget *central_widget = new QWidget(this);
@@ -79,7 +68,7 @@ MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(p
     custom_plot->setTitle("Frequency Sweep");
     custom_plot->setAxisTitle(QwtPlot::xBottom, "Frequency (MHz)");
     custom_plot->setAxisTitle(QwtPlot::yLeft, "Power (dB)");
-    custom_plot->setAxisScale(QwtPlot::xBottom, SWEEP_FREQ_MIN_MHZ * 1e6, SWEEP_FREQ_MAX_MHZ * 1e6);
+    custom_plot->setAxisScale(QwtPlot::xBottom, SWEEP_FREQ_MIN_MHZ, SWEEP_FREQ_MAX_MHZ);
     custom_plot->setAxisScale(QwtPlot::yLeft, -110, 20);
 
     curve = new QwtPlotCurve();
@@ -98,18 +87,14 @@ MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(p
 
     setCentralWidget(central_widget);
 
-    controller->set_fft_callback([this](const hackrf_sweep_state_t *state, uint64_t current_freq) {
-        QMetaObject::invokeMethod(this, [this, state, current_freq]() { update_plot(state, current_freq); }, Qt::QueuedConnection);
+    controller->set_fft_callback([this](db_data data) {
+        QMetaObject::invokeMethod(this, [this, data]() { update_plot(data); }, Qt::QueuedConnection);
     });
 }
 
-void MainWindow::update_plot(const hackrf_sweep_state_t *state, uint64_t current_freq) {
-    int size = state->fft.size;
-    int fft_bin_width = state->fft.bin_width;
-    float *pwr_ptr = state->fft.pwr;
-
+void MainWindow::update_plot(db_data data) {
     if (!dataset_spectrum.is_initialized()) {
-        dataset_spectrum = DatasetSpectrum(fft_bin_width, state->frequencies[0], state->frequencies[1], -90);
+        dataset_spectrum = DatasetSpectrum(data.bin_width, data.freq_ranges[0], data.freq_ranges[1]);
 
         raster_data = new WaterfallRasterData(COLOR_MAP_SAMPLES, dataset_spectrum.get_num_datapoints(), -90);
 
@@ -119,18 +104,19 @@ void MainWindow::update_plot(const hackrf_sweep_state_t *state, uint64_t current
         color_map->setData(raster_data);
     }
 
-    if (dataset_spectrum.add_new_data(current_freq, pwr_ptr, size)) {
-        const std::vector<double> freq_vec = dataset_spectrum.get_frequency_array();
-        const auto &pwr_vec = dataset_spectrum.get_spectrum_array();
+    dataset_spectrum.add_new_data(data.start_1, data.end_1, data.pwr_1);
+    dataset_spectrum.add_new_data(data.start_2, data.end_2, data.pwr_2);
 
-        curve->setSamples(
-            QVector(freq_vec.begin(), freq_vec.end()),
-            QVector(pwr_vec.begin(), pwr_vec.end()));
+    if (data.start_1 == data.freq_ranges[0] * 1e6l) {
+        const QVector<double> freq_vec = dataset_spectrum.get_frequency_array();
+        const QVector<double> pwr_vec = dataset_spectrum.get_spectrum_array();
+
+        curve->setSamples(freq_vec, pwr_vec);
         custom_plot->replot();
 
         QVector<double> *freq_qvec = new QVector<double>(pwr_vec.begin(), pwr_vec.end());
 
-        raster_data->addRow(freq_qvec);
+        raster_data->addRow(pwr_vec);
         color_plot->replot();
     }
 }

@@ -2,6 +2,7 @@
 #define WATERFALLRASTERDATA_HPP
 
 #include <QVector>
+#include <vector>
 #include <qwt_matrix_raster_data.h>
 #include <qwt_interval.h>
 
@@ -12,12 +13,12 @@ public:
 
     virtual ~WaterfallRasterData();
 
-    void addRow(QVector<double>* newRow);
+    void addRow(QVector<double> newRow);
 
     virtual double value(double x, double y) const override;
 
 private:
-    QVector<QVector<double>*> m_rows;
+    std::vector<std::vector<double>> m_rows;
     int m_maxRows;
     int m_cols;
     int m_currentIndex;

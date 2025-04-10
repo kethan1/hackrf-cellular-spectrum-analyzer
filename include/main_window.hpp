@@ -15,7 +15,7 @@
 #include "dataset_spectrum.hpp"
 #include "waterfall_raster_data.hpp"
 
-const int COLOR_MAP_SAMPLES = 1000;
+const int COLOR_MAP_SAMPLES = 300;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -36,7 +36,7 @@ class MainWindow : public QMainWindow {
     HackRF_Controller *controller;
     QLineEdit *total_gain_field;
 
-    void update_plot(const hackrf_sweep_state_t *state, uint64_t current_freq);
+    void update_plot(db_data data);
     void update_total_gain();
 };
 

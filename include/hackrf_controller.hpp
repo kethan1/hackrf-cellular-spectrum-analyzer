@@ -1,30 +1,42 @@
 #ifndef HackRF_Controller_HPP
 #define HackRF_Controller_HPP
 
+#include <functional>
+#include <mutex>
+#include <vector>
+#include <cstdint>
+
 #include <libhackrf/hackrf.h>
 extern "C" {
 #include <hackrf_sweeper.h>
 }
 
-#include <functional>
-#include <mutex>
-#include <vector>
-
-const int FFT_BIN_WIDTH = 20'000;
-const uint16_t SWEEP_FREQ_MIN_MHZ = 2'400;
-const uint16_t SWEEP_FREQ_MAX_MHZ = 2'500;
-
-/**
- * Callback type to deliver FFT data to an observer.
- * x_data and y_data hold the FFT data.
- */
-using fft_callback = std::function<void(const hackrf_sweep_state_t *state, uint64_t current_freq)>;
+const int FFT_BIN_WIDTH = 100'000;
+const uint16_t SWEEP_FREQ_MIN_MHZ = 300;
+const uint16_t SWEEP_FREQ_MAX_MHZ = 500;
 
 struct hackrf_gain_state {
     bool amp_enable;
     int vga_gain;
     int lna_gain;
 };
+
+struct db_data {
+    double bin_width;
+    int fft_size;
+    std::vector<uint16_t> freq_ranges;
+    uint64_t start_1;
+    uint64_t end_1;
+    std::vector<float> pwr_1;
+    uint64_t start_2;
+    uint64_t end_2;
+    std::vector<float> pwr_2;
+};
+
+/**
+ * Callback type to deliver FFT data to an observer.
+ */
+using fft_callback = std::function<void(db_data data)>;
 
 class HackRF_Controller {
    private:
@@ -38,7 +50,7 @@ class HackRF_Controller {
 
     void update_hackrf_gain_state();
 
-   public:
+    public:
     HackRF_Controller();
     ~HackRF_Controller();
 
@@ -52,9 +64,9 @@ class HackRF_Controller {
     void set_lna_gain(int gain);  // must be multiple of 8, 0 <= gain <= 40
     int get_total_gain();
     hackrf_gain_state get_gain_state();
-    void handle_fft(hackrf_sweep_state_t *state, uint64_t current_freq);
 
     void set_fft_callback(fft_callback callback);
+    fft_callback get_fft_callback();
 };
 
 #endif  // HackRF_Controller_HPP

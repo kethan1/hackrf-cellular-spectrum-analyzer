@@ -1,6 +1,6 @@
 [submodule "libs/hackrf_sweeper"]
 	path = libs/hackrf_sweeper
-	url = https://github.com/subreption/hackrf_sweeper/
+	url = https://github.com/kethan1/hackrf_sweeper/
 [submodule "libs/qwt"]
 	path = libs/qwt
 	url = https://git.code.sf.net/p/qwt/git
