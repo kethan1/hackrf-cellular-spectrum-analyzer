@@ -104,7 +104,6 @@ bool HackRF_Controller::connect_device() {
         std::cerr << "Failed to initialize sweep state\n";
     }
 
-    // hackrf_sweep_set_output(sweep_state, HACKRF_SWEEP_OUTPUT_MODE_TEXT, HACKRF_SWEEP_OUTPUT_TYPE_FILE, stdout);
     hackrf_sweep_set_output(sweep_state, HACKRF_SWEEP_OUTPUT_MODE_TEXT, HACKRF_SWEEP_OUTPUT_TYPE_NOP, NULL);
 
     sweep_state->user_ctx = this;
@@ -114,7 +113,7 @@ bool HackRF_Controller::connect_device() {
         std::cerr << "Failed to set sweep fft rx callback: " << result << "\n";
     }
 
-    uint16_t freq_ranges[] = {SWEEP_FREQ_MIN_MHZ, 2'300, 2'400, SWEEP_FREQ_MAX_MHZ};
+    uint16_t freq_ranges[] = {SWEEP_FREQ_MIN_MHZ, SWEEP_FREQ_MAX_MHZ};
     result = hackrf_sweep_set_range(sweep_state, freq_ranges, 2);
     if (result != HACKRF_SUCCESS) {
         std::cerr << "Failed to set sweep range: " << result << "\n";
@@ -214,26 +213,3 @@ fft_callback HackRF_Controller::get_fft_callback() {
     std::lock_guard<std::mutex> lock(device_mutex);
     return fft_callback_;
 }
-
-// void HackRF_Controller::handle_fft(hackrf_sweep_state_t *state, uint64_t current_freq) {
-//     if (fft_callback_) {
-//         fft_callback_(state, current_freq);
-//     }
-
-//     // uint64_t start_1 = current_freq;
-//     // uint64_t end_1 = current_freq + state->sample_rate_hz / 4;
-//     // std::vector<float> pwr_1(state->fft.size / 4);
-
-//     // for (uint32_t i = 0; i < state->fft.size / 4; i++) {
-//     //     state->fft.pwr[1 + (state->fft.size * 5) / 8 + i];
-//     // }
-
-//     // uint64_t start_2 = current_freq + state->sample_rate_hz / 2;
-//     // // uint64_t end_2 = current_freq + (state->sample_rate_hz * 3) / 4;
-
-//     // for (uint32_t i = 0; i < state->fft.size / 4; i++) {
-//     //     spectrum[start_2 + i * state->fft.bin_width] = state->fft.pwr[i + 1 + (state->fft.size / 8)];
-//     // }
-
-//     // std::vector<float> pwr_2(state->fft.size / 4);
-// }
