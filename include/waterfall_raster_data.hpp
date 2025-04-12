@@ -1,26 +1,29 @@
 #ifndef WATERFALLRASTERDATA_HPP
 #define WATERFALLRASTERDATA_HPP
 
+#include <qwt_interval.h>
+#include <qwt_matrix_raster_data.h>
+
 #include <QVector>
 #include <vector>
-#include <qwt_matrix_raster_data.h>
-#include <qwt_interval.h>
 
-class WaterfallRasterData : public QwtMatrixRasterData
-{
-public:
-    WaterfallRasterData(int rows, int cols, double init_value);
+class WaterfallRasterData : public QwtMatrixRasterData {
+   private:
+    std::vector<double> m_data;
+    int m_currentIndex;
+    int m_maxRows;
+    int m_cols;
+    int bin_width;
+    double init_value;
+
+   public:
+    WaterfallRasterData(int rows, int cols, int bin_width, double init_value);
     virtual ~WaterfallRasterData();
 
     void addRow(QVector<double> newRow);
+    void addRow(std::map<uint64_t, float> newRow);
 
     virtual double value(double x, double y) const override;
-
-private:
-    std::vector<double> m_data;
-    int m_maxRows;
-    int m_cols;
-    int m_currentIndex;
 };
 
-#endif // WATERFALLRASTERDATA_HPP
+#endif  // WATERFALLRASTERDATA_HPP

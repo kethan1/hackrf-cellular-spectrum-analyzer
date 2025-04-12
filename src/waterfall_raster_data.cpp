@@ -2,9 +2,10 @@
 
 #include <QtGlobal>
 #include <vector>
+#include <iostream>
 
-WaterfallRasterData::WaterfallRasterData(int rows, int cols, double init_value)
-    : m_maxRows(rows), m_cols(cols), m_currentIndex(0)
+WaterfallRasterData::WaterfallRasterData(int rows, int cols, int bin_width, double init_value)
+    : m_maxRows(rows), m_cols(cols), bin_width(bin_width), m_currentIndex(0), init_value(init_value)
 {
     m_data.resize(m_maxRows * m_cols, init_value);
 
@@ -18,16 +19,25 @@ WaterfallRasterData::~WaterfallRasterData() {
 }
 
 void WaterfallRasterData::addRow(QVector<double> newRow) {
-    if (newRow.size() != m_cols) {
-        return;
-    }
-
     int start_index = m_currentIndex * m_cols;
-    for (int i = 0; i < m_cols; ++i) {
+    for (int i = 0; i < std::min(m_cols, newRow.size()); ++i) {
         m_data[start_index + i] = newRow.at(i);
     }
 
     m_currentIndex = (m_currentIndex + 1) % m_maxRows;
+}
+
+void WaterfallRasterData::addRow(std::map<uint64_t, float> newRow) {
+    uint64_t start_freq = newRow.begin()->first;
+    uint64_t end_freq = newRow.rbegin()->first;
+
+    QVector<double> newRowVector(m_cols, init_value);
+
+    for (auto& pair: newRow) {
+        newRowVector[(pair.first - start_freq) / bin_width] = pair.second;
+    }
+
+    addRow(newRowVector);
 }
 
 double WaterfallRasterData::value(double x, double y) const {

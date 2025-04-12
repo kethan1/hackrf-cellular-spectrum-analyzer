@@ -114,8 +114,8 @@ bool HackRF_Controller::connect_device() {
         std::cerr << "Failed to set sweep fft rx callback: " << result << "\n";
     }
 
-    uint16_t freq_range[] = {SWEEP_FREQ_MIN_MHZ, SWEEP_FREQ_MAX_MHZ};
-    result = hackrf_sweep_set_range(sweep_state, freq_range, 1);
+    uint16_t freq_ranges[] = {SWEEP_FREQ_MIN_MHZ, 2'300, 2'400, SWEEP_FREQ_MAX_MHZ};
+    result = hackrf_sweep_set_range(sweep_state, freq_ranges, 2);
     if (result != HACKRF_SUCCESS) {
         std::cerr << "Failed to set sweep range: " << result << "\n";
     }

@@ -19,9 +19,10 @@ int hotplug_callback(struct libusb_context * /*ctx*/, struct libusb_device * /*d
                      libusb_hotplug_event /*event*/, void *user_data) {
     HackRF_Controller *controller = static_cast<HackRF_Controller *>(user_data);
 
-    std::this_thread::sleep_for(2s);
+    std::this_thread::sleep_for(0.2s);
 
     controller->connect_device();
+    controller->start_sweep();
     return 0;
 }
 

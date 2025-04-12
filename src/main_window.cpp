@@ -68,7 +68,6 @@ MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(p
     custom_plot->setTitle("Frequency Sweep");
     custom_plot->setAxisTitle(QwtPlot::xBottom, "Frequency (MHz)");
     custom_plot->setAxisTitle(QwtPlot::yLeft, "Power (dB)");
-    custom_plot->setAxisScale(QwtPlot::xBottom, SWEEP_FREQ_MIN_MHZ, SWEEP_FREQ_MAX_MHZ);
     custom_plot->setAxisScale(QwtPlot::yLeft, -110, 20);
 
     curve = new QwtPlotCurve();
@@ -94,12 +93,14 @@ MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(p
 
 void MainWindow::update_plot(db_data data) {
     if (!dataset_spectrum.is_initialized()) {
-        dataset_spectrum = DatasetSpectrum(data.bin_width, data.freq_ranges[0], data.freq_ranges[1]);
+        dataset_spectrum = DatasetSpectrum(data.bin_width, data.freq_ranges);
 
-        raster_data = new WaterfallRasterData(COLOR_MAP_SAMPLES, dataset_spectrum.get_num_datapoints(), -90);
+        custom_plot->setAxisScale(QwtPlot::xBottom, data.freq_ranges[0], data.freq_ranges[data.freq_ranges.size() - 1]);
+
+        raster_data = new WaterfallRasterData(COLOR_MAP_SAMPLES, dataset_spectrum.get_total_num_datapoints(), data.bin_width, -90);
 
         raster_data->setInterval(Qt::ZAxis, QwtInterval(-90, -25));
-        color_plot->setAxisScale(QwtPlot::xBottom, 0, dataset_spectrum.get_num_datapoints());
+        color_plot->setAxisScale(QwtPlot::xBottom, 0, dataset_spectrum.get_total_num_datapoints());
 
         color_map->setData(raster_data);
     }
@@ -109,14 +110,12 @@ void MainWindow::update_plot(db_data data) {
 
     if (data.start_1 == data.freq_ranges[0] * 1e6l) {
         const QVector<double> freq_vec = dataset_spectrum.get_frequency_array();
-        const QVector<double> pwr_vec = dataset_spectrum.get_spectrum_array();
+        const QVector<double> pwr_vec = dataset_spectrum.get_power_array();
 
         curve->setSamples(freq_vec, pwr_vec);
         custom_plot->replot();
 
-        QVector<double> *freq_qvec = new QVector<double>(pwr_vec.begin(), pwr_vec.end());
-
-        raster_data->addRow(pwr_vec);
+        raster_data->addRow(dataset_spectrum.get_spectrum());
         color_plot->replot();
     }
 }
