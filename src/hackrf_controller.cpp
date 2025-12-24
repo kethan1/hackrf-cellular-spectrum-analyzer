@@ -6,12 +6,10 @@
 #include <thread>
 #include <vector>
 
-static HackRF_Controller *global_controller = nullptr;
-
 extern "C" {
-    int hackrf_sweep_fft_callback(void *sweep_state, uint64_t current_freq, hackrf_transfer *transfer) {
-        hackrf_sweep_state_t *state = static_cast<hackrf_sweep_state_t *>(sweep_state);
-        HackRF_Controller *controller = static_cast<HackRF_Controller *>(state->user_ctx);
+    int hackrf_sweep_fft_callback(void* sweep_state, uint64_t current_freq, hackrf_transfer* transfer) {
+        hackrf_sweep_state_t* state = static_cast<hackrf_sweep_state_t*>(sweep_state);
+        hackrf_controller* controller = static_cast<hackrf_controller*>(state->user_ctx);
 
         if (controller && controller->get_fft_callback()) {
             uint64_t start_1 = current_freq;
@@ -19,18 +17,18 @@ extern "C" {
             std::vector<float> pwr_1;
             pwr_1.reserve(state->fft.size / 4);
 
-            pwr_1.insert(pwr_1.end(), &state->fft.pwr[1 + (state->fft.size * 5) / 8], &state->fft.pwr[1 + (state->fft.size * 5) / 8 + state->fft.size / 4]);
+            pwr_1.insert(pwr_1.begin(), &state->fft.pwr[1 + state->fft.size * 5 / 8], &state->fft.pwr[1 + state->fft.size * 5 / 8 + state->fft.size / 4]);
 
             uint64_t start_2 = current_freq + state->sample_rate_hz / 2;
             uint64_t end_2 = current_freq + (state->sample_rate_hz * 3) / 4;
             std::vector<float> pwr_2;
             pwr_2.reserve(state->fft.size / 4);
 
-            pwr_2.insert(pwr_2.end(), &state->fft.pwr[1 + state->fft.size / 8], &state->fft.pwr[1 + state->fft.size / 8 + state->fft.size / 4]);
+            pwr_2.insert(pwr_2.begin(), &state->fft.pwr[1 + state->fft.size / 8], &state->fft.pwr[1 + state->fft.size / 8 + state->fft.size / 4]);
 
             std::vector<uint16_t> freq_ranges;
 
-            for (int i=0; i<state->num_ranges; i++) {
+            for (int i = 0; i < state->num_ranges; i++) {
                 freq_ranges.push_back(state->frequencies[i * 2]);
                 freq_ranges.push_back(state->frequencies[i * 2 + 1]);
             }
@@ -42,13 +40,17 @@ extern "C" {
     }
 }
 
-HackRF_Controller::HackRF_Controller()
-    : device(nullptr), sweep_state(nullptr), connected(false), sweeping(false) {
-    gain_state = {false, 32, 0};
-    global_controller = this;
+bool hackrf_controller::is_connected() {
+    std::lock_guard<std::mutex> lock(device_mutex);
+    return connected;
 }
 
-HackRF_Controller::~HackRF_Controller() {
+hackrf_controller::hackrf_controller()
+    : device(nullptr), sweep_state(nullptr), connected(false), sweeping(false) {
+    gain_state = {false, 32, 0};
+}
+
+hackrf_controller::~hackrf_controller() {
     std::lock_guard<std::mutex> lock(device_mutex);
     if (device) {
         if (sweeping && sweep_state) {
@@ -60,10 +62,9 @@ HackRF_Controller::~HackRF_Controller() {
         delete sweep_state;
         sweep_state = nullptr;
     }
-    global_controller = nullptr;
 }
 
-bool HackRF_Controller::connect_device() {
+bool hackrf_controller::connect_device() {
     std::lock_guard<std::mutex> lock(device_mutex);
 
     if (connected && device) {
@@ -76,8 +77,10 @@ bool HackRF_Controller::connect_device() {
 
     if (result != HACKRF_SUCCESS) {
         std::cerr << "HackRF device not connected: " << result << "\n";
-        connected = false;
+
         device = nullptr;
+        connected = false;
+
         return false;
     }
     connected = true;
@@ -114,7 +117,7 @@ bool HackRF_Controller::connect_device() {
     }
 
     uint16_t freq_ranges[] = {SWEEP_FREQ_MIN_MHZ, SWEEP_FREQ_MAX_MHZ};
-    result = hackrf_sweep_set_range(sweep_state, freq_ranges, 2);
+    result = hackrf_sweep_set_range(sweep_state, freq_ranges, 1);
     if (result != HACKRF_SUCCESS) {
         std::cerr << "Failed to set sweep range: " << result << "\n";
     }
@@ -123,10 +126,11 @@ bool HackRF_Controller::connect_device() {
     if (result != HACKRF_SUCCESS) {
         std::cerr << "Failed to setup FFT\n";
     }
+
     return true;
 }
 
-void HackRF_Controller::start_sweep() {
+void hackrf_controller::start_sweep() {
     std::lock_guard<std::mutex> lock(device_mutex);
     if (!device || !sweep_state)
         return;
@@ -139,7 +143,7 @@ void HackRF_Controller::start_sweep() {
     sweeping = true;
 }
 
-void HackRF_Controller::stop_sweep() {
+void hackrf_controller::stop_sweep() {
     std::lock_guard<std::mutex> lock(device_mutex);
 
     if (!sweep_state)
@@ -149,19 +153,19 @@ void HackRF_Controller::stop_sweep() {
     sweeping = false;
 }
 
-void HackRF_Controller::set_gain_state(const hackrf_gain_state state) {
+void hackrf_controller::set_gain_state(const hackrf_gain_state state) {
     std::lock_guard<std::mutex> lock(device_mutex);
     gain_state = state;
     update_hackrf_gain_state();
 }
 
-void HackRF_Controller::set_amp_enable(bool enable) {
+void hackrf_controller::set_amp_enable(bool enable) {
     std::lock_guard<std::mutex> lock(device_mutex);
     gain_state.amp_enable = enable;
     update_hackrf_gain_state();
 }
 
-void HackRF_Controller::set_vga_gain(int gain) {
+void hackrf_controller::set_vga_gain(int gain) {
     std::lock_guard<std::mutex> lock(device_mutex);
     if (gain % 2 != 0 || gain < 0 || gain > 62) {
         std::cerr << "Invalid VGA gain value: " << gain << "\n";
@@ -171,7 +175,7 @@ void HackRF_Controller::set_vga_gain(int gain) {
     update_hackrf_gain_state();
 }
 
-void HackRF_Controller::set_lna_gain(int gain) {
+void hackrf_controller::set_lna_gain(int gain) {
     std::lock_guard<std::mutex> lock(device_mutex);
     if (gain % 8 != 0 || gain < 0 || gain > 40) {
         std::cerr << "Invalid LNA gain value: " << gain << "\n";
@@ -181,19 +185,19 @@ void HackRF_Controller::set_lna_gain(int gain) {
     update_hackrf_gain_state();
 }
 
-int HackRF_Controller::get_total_gain() {
+int hackrf_controller::get_total_gain() {
     std::lock_guard<std::mutex> lock(device_mutex);
 
     return gain_state.lna_gain + gain_state.vga_gain + (gain_state.amp_enable ? 14 : 0);
 }
 
-hackrf_gain_state HackRF_Controller::get_gain_state() {
+hackrf_gain_state hackrf_controller::get_gain_state() {
     std::lock_guard<std::mutex> lock(device_mutex);
 
     return gain_state;
 }
 
-void HackRF_Controller::update_hackrf_gain_state() {
+void hackrf_controller::update_hackrf_gain_state() {
     if (!device) {
         std::cerr << "HackRF device is not connected.\n";
         return;
@@ -204,12 +208,12 @@ void HackRF_Controller::update_hackrf_gain_state() {
     hackrf_set_lna_gain(device, gain_state.lna_gain);
 }
 
-void HackRF_Controller::set_fft_callback(fft_callback callback) {
+void hackrf_controller::set_fft_callback(fft_callback callback) {
     std::lock_guard<std::mutex> lock(device_mutex);
     fft_callback_ = callback;
 }
 
-fft_callback HackRF_Controller::get_fft_callback() {
+fft_callback hackrf_controller::get_fft_callback() {
     std::lock_guard<std::mutex> lock(device_mutex);
     return fft_callback_;
 }

@@ -1,5 +1,5 @@
-#ifndef WATERFALLRASTERDATA_HPP
-#define WATERFALLRASTERDATA_HPP
+#ifndef WATERFALL_RASTER_DATA_HPP
+#define WATERFALL_RASTER_DATA_HPP
 
 #include <qwt_interval.h>
 #include <qwt_matrix_raster_data.h>
@@ -26,4 +26,4 @@ class WaterfallRasterData : public QwtMatrixRasterData {
     virtual double value(double x, double y) const override;
 };
 
-#endif  // WATERFALLRASTERDATA_HPP
+#endif  // WATERFALL_RASTER_DATA_HPP

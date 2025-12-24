@@ -1,14 +1,13 @@
 #ifndef DATASET_SPECTRUM_HPP
 #define DATASET_SPECTRUM_HPP
 
-#include <vector>
+#include <hackrf_sweeper.h>
+
+#include <QLineEdit>
+#include <QMainWindow>
 #include <cstdint>
 #include <map>
-
-#include <QMainWindow>
-#include <QLineEdit>
-
-#include <hackrf_sweeper.h>
+#include <vector>
 
 class DatasetSpectrum {
    private:

@@ -12,19 +12,19 @@
 #include <algorithm>
 #include <iostream>
 #include <ranges>
+#include <thermal_color_map.hpp>
 
 #include "dataset_spectrum.hpp"
 #include "hackrf_controller.hpp"
 #include "waterfall_raster_data.hpp"
-#include <thermal_color_map.hpp>
 
-MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(parent), controller(ctrl) {
-    QWidget *central_widget = new QWidget(this);
-    QVBoxLayout *main_layout = new QVBoxLayout(central_widget);
+MainWindow::MainWindow(hackrf_controller* ctrl, QWidget* parent) : QMainWindow(parent), controller(ctrl) {
+    QWidget* central_widget = new QWidget(this);
+    QVBoxLayout* main_layout = new QVBoxLayout(central_widget);
 
-    QFormLayout *control_layout = new QFormLayout();
+    QFormLayout* control_layout = new QFormLayout();
 
-    QCheckBox *amp_check_box = new QCheckBox("AMP");
+    QCheckBox* amp_check_box = new QCheckBox("AMP");
     amp_check_box->setChecked(controller->get_gain_state().amp_enable);
     connect(amp_check_box, &QCheckBox::stateChanged, [this](int state) {
         controller->set_amp_enable(state == Qt::Checked);
@@ -32,8 +32,8 @@ MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(p
     });
     control_layout->addRow(amp_check_box);
 
-    QLabel *lna_label = new QLabel("LNA Gain");
-    QSlider *lna_slider = new QSlider(Qt::Horizontal);
+    QLabel* lna_label = new QLabel("LNA Gain");
+    QSlider* lna_slider = new QSlider(Qt::Horizontal);
     lna_slider->setRange(0, 5);  // 40 / 8 = 5 steps.
     lna_slider->setValue(controller->get_gain_state().lna_gain / 8);
     lna_slider->setTickInterval(1);
@@ -44,8 +44,8 @@ MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(p
     });
     control_layout->addRow(lna_label, lna_slider);
 
-    QLabel *vga_label = new QLabel("VGA Gain");
-    QSlider *vga_slider = new QSlider(Qt::Horizontal);
+    QLabel* vga_label = new QLabel("VGA Gain");
+    QSlider* vga_slider = new QSlider(Qt::Horizontal);
     vga_slider->setRange(0, 31);  // 62 / 2 = 31 steps.
     vga_slider->setValue(controller->get_gain_state().vga_gain / 2);
     vga_slider->setTickInterval(1);
@@ -56,7 +56,7 @@ MainWindow::MainWindow(HackRF_Controller *ctrl, QWidget *parent) : QMainWindow(p
     });
     control_layout->addRow(vga_label, vga_slider);
 
-    QLabel *total_gain_label = new QLabel("Total Gain:");
+    QLabel* total_gain_label = new QLabel("Total Gain:");
     total_gain_field = new QLineEdit();
     total_gain_field->setReadOnly(true);
     control_layout->addRow(total_gain_label, total_gain_field);

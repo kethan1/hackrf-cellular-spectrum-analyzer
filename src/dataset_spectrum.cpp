@@ -1,13 +1,13 @@
 #include "dataset_spectrum.hpp"
 
+#include <QLineEdit>
+#include <QMainWindow>
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <iostream>
 #include <map>
 #include <vector>
-#include <QMainWindow>
-#include <QLineEdit>
 
 template <class T>
 std::vector<uint64_t> linspace(T start, T stop, int num, bool endpoint = true) {

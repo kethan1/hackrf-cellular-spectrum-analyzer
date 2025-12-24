@@ -273,7 +273,7 @@ ThermalColorMap::ThermalColorMap() {
     }
 }
 
-QRgb ThermalColorMap::rgb(const QwtInterval &interval, double value) const {
+QRgb ThermalColorMap::rgb(const QwtInterval& interval, double value) const {
     if (value <= interval.minValue()) {
         return qRgb(0, 0, 0);
     }

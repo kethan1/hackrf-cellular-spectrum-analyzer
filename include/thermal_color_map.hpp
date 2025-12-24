@@ -1,5 +1,5 @@
-#ifndef THERMALCOLORMAP_HPP
-#define THERMALCOLORMAP_HPP
+#ifndef THERMAL_COLOR_MAP_HPP
+#define THERMAL_COLOR_MAP_HPP
 
 #include <qwt_color_map.h>
 #include <qwt_matrix_raster_data.h>
@@ -11,7 +11,7 @@ class ThermalColorMap : public QwtLinearColorMap {
    public:
     ThermalColorMap();
 
-    QRgb rgb(const QwtInterval &interval, double value) const;
+    QRgb rgb(const QwtInterval& interval, double value) const;
 };
 
-#endif // THERMALCOLORMAP_HPP
+#endif  // THERMAL_COLOR_MAP_HPP

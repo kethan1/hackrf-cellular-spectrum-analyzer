@@ -1,12 +1,12 @@
-#ifndef HackRF_Controller_HPP
-#define HackRF_Controller_HPP
+#ifndef HACKRF_CONTROLLER_HPP
+#define HACKRF_CONTROLLER_HPP
 
+#include <libhackrf/hackrf.h>
+
+#include <cstdint>
 #include <functional>
 #include <mutex>
 #include <vector>
-#include <cstdint>
-
-#include <libhackrf/hackrf.h>
 extern "C" {
 #include <hackrf_sweeper.h>
 }
@@ -38,10 +38,10 @@ struct db_data {
  */
 using fft_callback = std::function<void(db_data data)>;
 
-class HackRF_Controller {
+class hackrf_controller {
    private:
-    hackrf_device *device = nullptr;
-    hackrf_sweep_state_t *sweep_state = nullptr;
+    hackrf_device* device = nullptr;
+    hackrf_sweep_state_t* sweep_state = nullptr;
     hackrf_gain_state gain_state;
     bool connected;
     bool sweeping;
@@ -50,9 +50,11 @@ class HackRF_Controller {
 
     void update_hackrf_gain_state();
 
-    public:
-    HackRF_Controller();
-    ~HackRF_Controller();
+   public:
+    hackrf_controller();
+    ~hackrf_controller();
+
+    bool is_connected();
 
     bool connect_device();
     void start_sweep();
@@ -69,4 +71,4 @@ class HackRF_Controller {
     fft_callback get_fft_callback();
 };
 
-#endif  // HackRF_Controller_HPP
+#endif  // HACKRF_CONTROLLER_HPP
