@@ -5,6 +5,7 @@
 #include <qwt_matrix_raster_data.h>
 
 #include <QVector>
+#include <map>
 #include <vector>
 
 class WaterfallRasterData : public QwtMatrixRasterData {

@@ -3,8 +3,7 @@
 
 #include <hackrf_sweeper.h>
 
-#include <QLineEdit>
-#include <QMainWindow>
+#include <QVector>
 #include <cstdint>
 #include <map>
 #include <vector>
@@ -22,7 +21,7 @@ class DatasetSpectrum {
 
     int get_num_datapoints() const;
     int get_total_num_datapoints() const;
-    void add_new_data(uint64_t start_freq, uint64_t end_freq, std::vector<float> pwr);
+    void add_new_data(uint64_t start_freq, uint64_t end_freq, const std::vector<float>& pwr);
     std::map<uint64_t, float> get_spectrum() const;
     QVector<double> get_power_array() const;
     QVector<double> get_frequency_array() const;

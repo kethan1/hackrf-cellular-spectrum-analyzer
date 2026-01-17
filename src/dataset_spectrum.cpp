@@ -1,7 +1,6 @@
 #include "dataset_spectrum.hpp"
 
-#include <QLineEdit>
-#include <QMainWindow>
+#include <QVector>
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -40,6 +39,10 @@ DatasetSpectrum::DatasetSpectrum(double fft_bin_size_hz, std::vector<uint16_t> f
 }
 
 int DatasetSpectrum::get_num_datapoints() const {
+    if (freq_ranges.empty()) {
+        return 0;
+    }
+
     int datapoints = 0;
     for (size_t i = 0; i < freq_ranges.size(); i += 2) {
         datapoints += (freq_ranges[i + 1] - freq_ranges[i]) / (fft_bin_size_hz / 1e6);
@@ -48,10 +51,13 @@ int DatasetSpectrum::get_num_datapoints() const {
 }
 
 int DatasetSpectrum::get_total_num_datapoints() const {
+    if (freq_ranges.empty()) {
+        return 0;
+    }
     return (freq_ranges[freq_ranges.size() - 1] - freq_ranges[0]) / (fft_bin_size_hz / 1e6);
 }
 
-void DatasetSpectrum::add_new_data(uint64_t start_freq, uint64_t end_freq, std::vector<float> pwr) {
+void DatasetSpectrum::add_new_data(uint64_t start_freq, uint64_t end_freq, const std::vector<float>& pwr) {
     std::vector<uint64_t> freqs = linspace<uint64_t>(start_freq, end_freq, pwr.size(), false);
 
     for (size_t i = 0; i < pwr.size(); ++i) {

@@ -41,7 +41,9 @@ add_library(qwt ${QWT_SOURCES})
 target_include_directories(qwt PUBLIC ${qwt_SOURCE_DIR}/src/ ${qwt_SOURCE_DIR}/classincludes/)
 target_link_libraries(qwt PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::OpenGL Qt5::Concurrent Qt5::Svg Qt5::PrintSupport)
 
-add_executable(${PROJECT_NAME} src/main.cpp src/hackrf_controller.cpp include/hackrf_controller.hpp src/main_window.cpp include/main_window.hpp src/dataset_spectrum.cpp include/dataset_spectrum.hpp src/waterfall_raster_data.cpp include/waterfall_raster_data.hpp src/thermal_color_map.cpp include/thermal_color_map.hpp)
+file(GLOB source_list "src/*.cpp" "include/*.hpp")
+
+add_executable(${PROJECT_NAME} ${source_list})
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${LIBHACKRF_INCLUDE_DIR} ${LIBUSB_INCLUDE_DIR} libs/hackrf_sweeper/include include)
 target_link_libraries(${PROJECT_NAME} PRIVATE hackrf_sweeper Qt5::Core Qt5::Gui Qt5::Widgets qwt ${LIBHACKRF_LIBRARIES} ${LIBUSB_LIBRARIES})

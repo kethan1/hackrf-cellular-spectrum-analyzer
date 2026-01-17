@@ -2,6 +2,7 @@
 
 #include <QtGlobal>
 #include <iostream>
+#include <map>
 #include <vector>
 
 WaterfallRasterData::WaterfallRasterData(int rows, int cols, int bin_width, double init_value)
@@ -27,13 +28,16 @@ void WaterfallRasterData::addRow(QVector<double> newRow) {
 }
 
 void WaterfallRasterData::addRow(std::map<uint64_t, float> newRow) {
+    if (newRow.empty() || bin_width <= 0) {
+        return;
+    }
+
     uint64_t start_freq = newRow.begin()->first;
-    uint64_t end_freq = newRow.rbegin()->first;
 
     QVector<double> newRowVector(m_cols, init_value);
 
-    for (auto& pair : newRow) {
-        newRowVector[(pair.first - start_freq) / bin_width] = pair.second;
+    for (const auto& [freq, power] : newRow) {
+        newRowVector[(freq - start_freq) / bin_width] = power;
     }
 
     addRow(newRowVector);

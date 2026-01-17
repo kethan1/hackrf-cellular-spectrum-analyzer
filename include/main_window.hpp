@@ -15,28 +15,27 @@
 #include "hackrf_controller.hpp"
 #include "waterfall_raster_data.hpp"
 
-const int COLOR_MAP_SAMPLES = 300;
+constexpr int COLOR_MAP_SAMPLES = 300;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
    public:
-    MainWindow(hackrf_controller* controller, QWidget* parent = nullptr);
+    explicit MainWindow(HackRFController* controller, QWidget* parent = nullptr);
 
-   private:
-    QwtPlot* custom_plot;
-    QwtPlotCurve* curve;
+private:
+    QwtPlot* custom_plot_ = nullptr;
+    QwtPlotCurve* curve_ = nullptr;
 
-    QwtPlot* color_plot;
-    QwtPlotSpectrogram* color_map;
-    WaterfallRasterData* raster_data;
+    QwtPlot* color_plot_ = nullptr;
+    QwtPlotSpectrogram* color_map_ = nullptr;
+    WaterfallRasterData* raster_data_ = nullptr;
 
-    DatasetSpectrum dataset_spectrum;
+    DatasetSpectrum dataset_spectrum_;
+    HackRFController* controller_ = nullptr;
+    QLineEdit* total_gain_field_ = nullptr;
 
-    hackrf_controller* controller;
-    QLineEdit* total_gain_field;
-
-    void update_plot(db_data data);
+    void update_plot(const FFTSweepData& data);
     void update_total_gain();
 };
 
