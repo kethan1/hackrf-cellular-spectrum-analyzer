@@ -1,1 +1,1 @@
-# HackRF Cellular Spectrum Analyzer
+# HackRF Qt Spectrum Analyzer
