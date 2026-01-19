@@ -9,17 +9,15 @@
 #include <mutex>
 #include <vector>
 
+#include "hackrf_gain_state.hpp"
+
 extern "C" {
 #include <hackrf_sweeper.h>
 }
 
-namespace sweep_config {
 constexpr int FFT_BIN_WIDTH_HZ = 50'000;
-constexpr uint16_t SWEEP_FREQ_MIN_MHZ = 2'200;
-constexpr uint16_t SWEEP_FREQ_MAX_MHZ = 2'600;
-}  // namespace sweep_config
 
-namespace gain_limits {
+namespace hackrf_hardware {
 constexpr int VGA_MIN = 0;
 constexpr int VGA_MAX = 62;
 constexpr int VGA_STEP = 2;
@@ -27,27 +25,11 @@ constexpr int LNA_MIN = 0;
 constexpr int LNA_MAX = 40;
 constexpr int LNA_STEP = 8;
 constexpr int AMP_GAIN_DB = 14;
-}  // namespace gain_limits
+}  // namespace hackrf_hardware
 
-class HackRFGainState {
-   public:
-    bool amp_enable = false;
-    int vga_gain = 32;  // Valid: 0-62, must be even
-    int lna_gain = 0;   // Valid: 0-40, must be multiple of 8
-
-    [[nodiscard]] int total_gain() const noexcept {
-        return lna_gain + vga_gain + (amp_enable ? gain_limits::AMP_GAIN_DB : 0);
-    }
-
-    [[nodiscard]] bool is_valid() const noexcept {
-        const bool vga_valid = (vga_gain >= gain_limits::VGA_MIN) &&
-                               (vga_gain <= gain_limits::VGA_MAX) &&
-                               (vga_gain % gain_limits::VGA_STEP == 0);
-        const bool lna_valid = (lna_gain >= gain_limits::LNA_MIN) &&
-                               (lna_gain <= gain_limits::LNA_MAX) &&
-                               (lna_gain % gain_limits::LNA_STEP == 0);
-        return vga_valid && lna_valid;
-    }
+struct ScanRange {
+    uint16_t start_mhz;
+    uint16_t end_mhz;
 };
 
 struct FrequencyBand {
@@ -82,25 +64,29 @@ class HackRFController {
 
     void start_sweep();
     void stop_sweep();
+    void restart_sweep();
 
     void set_gain_state(const HackRFGainState& state);
-    void set_amp_enable(bool enable);
-    bool set_vga_gain(int gain);
-    bool set_lna_gain(int gain);
-    [[nodiscard]] int get_total_gain() const;
     [[nodiscard]] HackRFGainState get_gain_state() const;
+    void set_amp_enable(bool enable) noexcept;
+    void set_vga_gain(int gain);
+    void set_lna_gain(int gain);
 
     void set_fft_callback(FFTCallback callback);
     [[nodiscard]] FFTCallback get_fft_callback() const;
 
+    bool set_scan_ranges(const std::vector<ScanRange>& ranges);
+    [[nodiscard]] std::vector<ScanRange> get_scan_ranges() const;
+
    private:
     void update_device_gain();  // Must be called with mutex held
-    void cleanup_device();      // Must be called with mutex held
+    bool update_device_scan_ranges();
+    void cleanup_device();  // Must be called with mutex held
 
     hackrf_device* device_ = nullptr;
     std::unique_ptr<hackrf_sweep_state_t> sweep_state_;
     HackRFGainState gain_state_;
-    bool connected_ = false;
+    std::vector<ScanRange> scan_ranges_;
     bool sweeping_ = false;
     mutable std::mutex mutex_;
     FFTCallback fft_callback_;

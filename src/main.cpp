@@ -29,11 +29,12 @@ int main(int argc, char* argv[]) {
     hackrf_init();
 
     HackRFController controller;
+    controller.set_scan_ranges({{2000, 2700}});  // Default 2 GHz to 2.7 GHz
 
     if (controller.connect_device()) {
         controller.start_sweep();
 
-        HackRFGainState gain_state{.amp_enable = false, .vga_gain = 24, .lna_gain = 0};
+        HackRFGainState gain_state{false, 24, 0};
         controller.set_gain_state(gain_state);
     }
 
@@ -82,6 +83,7 @@ int main(int argc, char* argv[]) {
         libusb_hotplug_deregister_callback(libusb_ctx, callback_handle);
         libusb_exit(libusb_ctx);
     }
+
     if (controller.is_connected()) {
         controller.stop_sweep();
     }
